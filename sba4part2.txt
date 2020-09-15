@@ -1,0 +1,990 @@
+package com.boot.mvc.com.bean;
+
+import javax.transaction.Transactional;
+
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.boot.mvc.com.model.DxcUsers;
+@Component
+@Transactional
+public class DxcUsersDao {
+	@Autowired
+	SessionFactory sessionFactory;
+	public DxcUsersDao() {
+		// TODO Auto-generated constructor stub
+	}
+
+	
+	
+	public DxcUsersDao(SessionFactory sessionFactory) {
+	}
+	public String saveDxcUsers(DxcUsers dxcUsers){
+		try{
+		Session session=sessionFactory.getCurrentSession();
+		session.save(dxcUsers);
+		return "DxcUsers Created";
+		}
+		catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		}
+
+		return "cannot create DxcUsers";
+		}
+
+
+	public DxcUsers getUsersById(int userId){
+		try{
+		Session session=sessionFactory.getCurrentSession();
+		DxcUsers DxcUsers=(DxcUsers)session.get(DxcUsers.class,userId);
+		return DxcUsers;
+		}
+		catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		}
+
+		return null;
+		}
+
+	public String updatePassword(String oldpass, String newpass)
+	{
+		
+			try
+			{
+			Session session=  sessionFactory.getCurrentSession();
+
+			String queryString = "update DxcUsers s set s.password=:newPass where s.password=:oldPass";
+		    Query query = session.createQuery(queryString);
+		    query.setParameter("newPass", newpass);
+		    query.setParameter("oldPass", oldpass);
+		    
+		    query.executeUpdate();
+		    
+		   int res = query.executeUpdate();
+			if(res>0)
+			return	"Password Updated";
+			}
+			
+			catch (Exception e) {
+			e.printStackTrace();
+			}
+
+
+			return "Password not Updated";
+
+
+
+			}
+
+
+	
+
+
+	
+
+
+}
+-----------------------------------------------------------------
+package com.boot.mvc.com.HomeController;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.boot.mvc.com.bean.DxcUsersDao;
+import com.boot.mvc.com.model.DxcUsers;
+@Controller
+public class HomeController {
+	@Autowired
+	DxcUsersDao dao;
+
+
+	@RequestMapping(value="/test")
+	public String home()
+	{
+		return "NewFile2";
+	}
+	
+	@RequestMapping(value="/newuser")
+	public String home1()
+	{
+		return "NewFile3";
+	}
+	
+
+	@RequestMapping(value = "/display")
+	public String display(Model model, @ModelAttribute DxcUsers dxcUsers) {
+		String status = dao.saveDxcUsers( dxcUsers);
+		model.addAttribute("status", status);
+		return "display";
+	}
+	@RequestMapping(value = "/NewFile2")
+	public String home(Model model) {
+		return "NewFile2";
+	}
+
+	int userId=0;
+	@RequestMapping(value="/loginStatus")
+	public String loginPage(Model model,@RequestParam("userId") String userId, @RequestParam("password") String password)
+	{
+		int userid=Integer.parseInt(userId);
+		this.userId=userid;
+		
+		DxcUsers dxcUsers=dao.getUsersById(userid);
+		String pass=dxcUsers.getPassword();
+		if((dxcUsers !=null) && (pass.equals(password)))
+		{
+			return "sucess";
+		}
+
+		else
+		{
+
+			return "loginfail";
+		}
+
+	}
+
+	@RequestMapping(value="/forgetpasswordpage")
+	public String forgetPassword()
+	{
+		return "NewFile1";
+	}
+	@RequestMapping(value="/changepassword")
+	public String forgetPassword(Model model,@RequestParam("userId") String userId,@RequestParam("securityQuestion") String securityQuestion,@RequestParam("securityAnswer") String securityAnswer)
+	{
+		int userid=Integer.parseInt(userId);
+		//System.out.println(userid);
+	this.userId=userid;
+		DxcUsers dxcUsers=dao.getUsersById(userid);
+		//System.out.println(dxcUsers);
+		String dxcsecurityQuestion= dxcUsers.getSecurityQuestion();
+		String dxcsecurityAnswer=dxcUsers.getSecurityAnswer();
+		
+		if((dxcUsers !=null)  && (dxcsecurityQuestion.equalsIgnoreCase(securityQuestion))  &&  (dxcsecurityAnswer.equalsIgnoreCase(securityAnswer)) )
+		{
+			model.addAttribute("userId",userId);
+			return "change";
+		}
+		else 
+		{
+			return "changepasswordfail";
+		}
+
+
+	}
+
+	//DxcUsers dxcUsers;
+	@RequestMapping(value = "/check")
+	public String CheckPassword(Model model,
+			 @RequestParam("id") Integer userId,@RequestParam("password") String password,
+			@RequestParam("cpassword") String confirmpassword) {
+		
+System.out.println(userId);
+	    if(password.equals(confirmpassword)==true)
+	    {
+	    	
+	    	
+	    	DxcUsers user=dao.getUsersById(userId);
+	    
+	    	System.out.println(user);
+	    	
+	    	String oldpass=user.getPassword();
+	    	
+	    	System.out.println(oldpass);
+	    	System.out.println(password);
+	    	
+	    	
+	    	String s=dao.updatePassword(oldpass,password);
+	    	System.out.println(s);
+	    	
+	    	
+	   
+	    	
+	    	return "resetsuccess";
+	    	
+	    	
+	    }
+		
+	    else
+	    	return "fail";
+		
+		
+		
+
+	}
+}
+---------------------------------------
+package com.boot.mvc.com.model;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+@Entity
+public class DxcUsers {
+@Id	
+private int userId;
+private String username;
+private String password;
+private String securityQuestion;
+private String securityAnswer;
+public  int getUserId() {
+	return userId;
+}
+public void setUserId(int userId) {
+	this.userId = userId;
+}
+public String getUsername() {
+	return username;
+}
+public void setUsername(String username) {
+	this.username = username;
+}
+public String getPassword() {
+	return password;
+}
+public void setPassword(String password) {
+	this.password = password;
+}
+public String getSecurityQuestion() {
+	return securityQuestion;
+}
+public void setSecurityQuestions(String securityQuestion) {
+	this.securityQuestion = securityQuestion;
+}
+public String getSecurityAnswer() {
+	return securityAnswer;
+}
+public void setSecurityAnswer(String securityAnswer) {
+	this.securityAnswer = securityAnswer;
+}
+public DxcUsers(int userId, String username, String password, String securityQuestion, String securityAnswer) {
+	super();
+	this.userId = userId;
+	this.username = username;
+	this.password = password;
+	this.securityQuestion = securityQuestion;
+	this.securityAnswer = securityAnswer;
+}
+@Override
+public String toString() {
+	return "DxcUsers [userId=" + userId + ", username=" + username + ", password=" + password + ", securityQuestion="
+			+ securityQuestion + ", securitySAnswer=" + securityAnswer + "]";
+}
+public DxcUsers() {
+	// TODO Auto-generated constructor stub
+}
+
+}
+-----------------------------------------------------------------
+jsp files
+--------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+</head>
+<body>
+<div class="jumbotron">
+ <div class="container">
+<h2 id="lh">Dxc user Login</h2>
+<form action="loginStatus" class="form-group">
+<table>
+<tr><td>UserId:</td> <td><input type="text" name="userId"  class="form-control"></td></tr>
+<tr><td>Password:</td> <td><input type="password" name="password"  class="form-control"></td></tr>
+<tr><td></td><td><input type="submit" value="login" class="btn btn-success btn-lg btn-block"></td></tr>
+</table>
+</form>
+<form action="newuser">
+<input type="submit" value="new user" class="btn btn-success btn-lg btn-block">
+</form>
+<form action="forgetpasswordpage ">
+<input type="submit" value="forgot password" class="btn btn-success btn-lg btn-block">
+</form>
+
+</body>
+</html>
+------------------------------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+<body>
+<form action="display" class="form-group">
+
+<table id="tblad">
+
+<tr><td>UserId: </td><td><input type="text" name="userId"  class="form-control"></td></tr>
+<tr><td>UserName: </td><td><input type="text" name="username"  class="form-control"></td></tr>
+<tr><td>password: </td><td><input type="password" name="password"  class="form-control"></td></tr>
+<tr><td>Security Question: </td>
+<td >
+<select name="securityQuestion"  class="btn btn-info">
+<div class="dropdown-menu">
+<option class="dropdown-item">What is your nick name?</option>
+<option class="dropdown-item">What is your  pet's name?</option>
+<option class="dropdown-item">What is your birth place?</option>
+<option class="dropdown-item">What is your favorite food?</option>
+
+</div>
+</select>
+</td>
+</tr>
+<tr><td>Security Answer:</td><td><input type="text" name="securityAnswer"  class="form-control"></td></tr>
+<tr><td></td><td><input type="submit" value="Validate" class="btn btn-success btn-block"></td></tr>
+
+
+</table>
+</body>
+</html>
+----------------------------------------
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+<link href="<c:url value="/resources/css/style.css"/>"rel="stylesheet">
+<title>Home</title>
+</style>
+<script type="text/javascript">
+alert('Thank you for register ! Your details are registered successfully!');
+</script>
+</head>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+<body>
+<form action="NewFile2">
+<input type="submit"  value="Return to Login Page">
+</form>
+
+</body>
+</html>
+
+
+------------------------------
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+<link href="<c:url value="/resources/css/style.css"/>"rel="stylesheet">
+<title>Home</title>
+</style>
+<script type="text/javascript">
+alert('login sucessfully!);
+</script>
+</head>
+<h1>login sucessfully</h1>
+<h2>Welcome user</h2>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+<body>
+<form action="NewFile2">
+<input type="submit"  value="back to home">
+</form>
+
+</body>
+</html>
+
+
+-----------------------------------------------------
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+<link href="<c:url value="/resources/css/style.css"/>"rel="stylesheet">
+<title>Home</title>
+</style>
+<script type="text/javascript">
+alert('login sucessfully!);
+</script>
+</head>
+<h1>login fail</h1>
+<h2>Welcom user</h2>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+<body>
+<form action="NewFile2">
+<input type="submit"  value="back to home">
+</form>
+
+</body>
+</html>
+
+
+------------------------------------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>change password</title>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+</head>
+<form action="check" class="form-group">
+
+
+ 
+<tr><td>Password:</td><td><input type="text" name="password" class="form-control" required></td></tr>
+<tr><td>Confirm Password:</td><td><input type="text" name="confirmpassword" class="form-control" required></td></tr>
+
+<tr><td></td><td><input type="submit" value="Submit" class="btn btn-success btn-block"></td></tr>
+
+</table>
+</form>
+
+
+</div>
+
+</div>
+<body>
+
+</body>
+</html>
+-------------------------------------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+<table id="tblad">
+<form action="changepassword" class="form-group">
+<tr><td>UserId: </td><td><input type="text" name="userId"  class="form-control"></td></tr>
+<tr><td>Security Question: </td>
+<td >
+<select name="securityQuestion"  class="btn btn-info">
+<div class="dropdown-menu">
+<option class="dropdown-item">Choose a security question</option>
+<option class="dropdown-item">What is your nick name?</option>
+<option class="dropdown-item">What is your  pet's name?</option>
+<option class="dropdown-item">What is your birth place?</option>
+<option class="dropdown-item">What is your favorite food?</option>
+
+</div>
+</select>
+</td>
+</tr>
+<tr><td>Security Answer:</td><td><input type="text" name="securityAnswer"  class="form-control"></td></tr>
+<tr><td></td><td><input type="submit" value="Validate" class="btn btn-success btn-block"></td></tr>
+
+
+</table>
+
+<% 
+String userId = request.getParameter("userId"); 
+session.setAttribute("userId",userId); 
+%>
+
+</form>
+
+</div>
+
+</div>
+</head>
+<body>
+
+</body>
+</html>
+-------------------------------------------------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>change password</title>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+</head>
+<form action="check" class="form-group">
+ <p> ${userId} </p>
+
+<input type="hidden" name="id" value="${userId}">
+
+ 
+<tr><td>Password:</td><td><input type="text" name="password" class="form-control" required></td></tr>
+<tr><td>Confirm Password:</td><td><input type="text" name="cpassword" class="form-control" required></td></tr>
+
+<tr><td></td><td><input type="submit" value="Submit" class="btn btn-success btn-block"></td></tr>
+
+</table>
+</form>
+
+
+</div>
+
+</div>
+<body>
+
+</body>
+</html>
+--------------------------------------------------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<h1 align="center">Change password here</h1>
+
+<form action="check1">
+<input type="password" name="password" placeholder="password">
+<br>
+<br>
+<input type="password" name="confirmpassword" placeholder="confirmpassword">
+<br>
+<br>
+
+<input type="submit"/>
+</form>
+</head>
+<body>
+
+</body>
+</html>
+------------------------------
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+
+<title>Home</title>
+
+</head>
+
+<body>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+
+login success
+
+</body>
+</html>
+
+
+-------------------------------------------
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+
+<title>Home</title>
+
+</head>
+<style>   
+Body {  
+  font-family: Calibri, Helvetica, sans-serif;  
+  background-color: pink;  
+}  
+button {   
+       background-color: #4CAF50;   
+       width: 100%;  
+        color: orange;   
+        padding: 15px;   
+        margin: 10px 0px;   
+        border: none;   
+        cursor: pointer;   
+         }   
+ form {   
+        border: 3px solid #f1f1f1;   
+    }   
+ input[type=text], input[type=password] {   
+        width: 100%;   
+        margin: 8px 0;  
+        padding: 12px 20px;   
+        display: inline-block;   
+        border: 2px solid green;   
+        box-sizing: border-box;   
+    }  
+ button:hover {   
+        opacity: 0.7;   
+    }   
+  .cancelbtn {   
+        width: auto;   
+        padding: 10px 18px;  
+        margin: 10px 5px;  
+    }   
+        
+     
+ .container {   
+        padding: 25px;   
+        background-color: lightblue;  
+    }   
+</style>   
+
+<body>
+
+login fail
+
+</body>
+</html>
+
+
